@@ -14,7 +14,11 @@ class UsuarioController{
     static async cadastrarUsuario(req, res) {
         try {
             const novoUsuario = await Usuario.create(req.body);
-            res.status(201).json({message: "Usuário cadastrado com sucesso", usuario: novoUsuario});
+            await novoUsuario.save();
+
+            const { senha, ...usuarioSemSenha } = novoUsuario.toObject();
+
+            res.status(201).json({message: "Usuário cadastrado com sucesso", usuario: usuarioSemSenha});
         } catch (erro) {
            res.status(500).send({message: `${erro.message} - falha ao cadastrar usuário`});
         }
