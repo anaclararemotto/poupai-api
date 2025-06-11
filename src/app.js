@@ -1,5 +1,6 @@
 import express from "express"
 import conectaNaDatabase from "./config/db.Connect.js";
+import routes from "./routes/index.js";
 
 const conexao = await conectaNaDatabase();
 
@@ -13,5 +14,6 @@ conexao.once("open", () => {
 })
 
 const app = express();
+routes(app);
 
 export default app;
