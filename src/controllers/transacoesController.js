@@ -36,6 +36,12 @@ class TransacaoController {
         });
       }
 
+      if (valor <= 0 || valor > 5000){
+        return res.status(400).json({
+          message: "Valor inválido. Deve ser maior que 0 e menor ou igual a 5000.",
+        });
+      }
+
       const novaTransacao = new Transacao({
         tipo,
         valor,
