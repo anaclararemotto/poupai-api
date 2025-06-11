@@ -1,7 +1,17 @@
 import Transacao from "../model/Transacao.js";
 
 class TransacaoController {
-    
+  static async listarTransacoes(req, res) {
+    try {
+      const listarTransacoes = await Transacao.find({});
+      res.status(200).json(listarTransacoes);
+    } catch (erro) {
+      res
+        .status(500)
+        .send({ message: `${erro.message} - falha ao listar transações` });
+    }
+  }
+
   static async criarTransacoes(req, res) {
     try {
       const { tipo, valor, data, categoria, bancoOrigem, bancoDestino } =
@@ -23,12 +33,12 @@ class TransacaoController {
         bancoDestino: tipo !== "receita" ? bancoDestino : undefined,
       });
 
-      res
-        .status(201)
-        .json({
-          message: "Transação criada com sucesso",
-          transacao: novaTransacao,
-        });
+      await novaTransacao.save();
+
+      res.status(201).json({
+        message: "Transação criada com sucesso",
+        transacao: novaTransacao,
+      });
     } catch (erro) {
       res
         .status(500)

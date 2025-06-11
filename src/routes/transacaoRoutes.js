@@ -3,6 +3,7 @@ import TransacaoController from "../controllers/transacoesController.js";
 
 const router = express.Router();
 
-router.post("/transacao", TransacaoController.criarTransacoes);
+router.get("/transacoes", TransacaoController.listarTransacoes);
+router.post("/transacoes", TransacaoController.criarTransacoes);
 
 export default router;
