@@ -11,6 +11,16 @@ class UsuarioController{
         }
     }
 
+    static async listarUsuariosPorId(req, res) {
+        try {
+            const id = req.params.id;
+            const usuarioEncontrado = await Usuario.findById(id);
+            res.status(200).json(usuarioEncontrado);
+        } catch (erro) {
+            res.status(500).send({message: `${erro.message} - falha ao encontrar usuário`});
+        }
+    }
+
     static async cadastrarUsuario(req, res) {
         try {
             const novoUsuario = await Usuario.create(req.body);
