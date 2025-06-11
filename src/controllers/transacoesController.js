@@ -12,6 +12,18 @@ class TransacaoController {
     }
   }
 
+  static async listarTransacoesPorId(req, res) {
+    try {
+      const id = req.params.id;
+      const transacaoEncontrada = await Transacao.findById(id);
+      res.status(200).json(transacaoEncontrada);
+    } catch (erro) {
+      res
+        .status(500)
+        .send({ message: `${erro.message} - falha ao listar transações` });
+    }
+  }
+
   static async criarTransacoes(req, res) {
     try {
       const { tipo, valor, data, categoria, bancoOrigem, bancoDestino } =
