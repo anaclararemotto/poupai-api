@@ -63,6 +63,16 @@ class TransacaoController {
         .json({ message: `Erro ao criar transação: ${erro.message}` });
     }
   }
+
+  static async excluirTransacao(req, res) {
+    try {
+      const id = req.params.id;
+      await Transacao.findByIdAndDelete(id);
+      res.status(200).json({ message: "Transação excluída com sucesso" });
+    } catch (erro) {
+      res.status(500).json({message: `Erro ao excluir transação: ${erro.message}`});
+    }
+  }
 }
 
 export default TransacaoController;
