@@ -10,6 +10,16 @@ class BancoController {
         }
     }
 
+    static async listarBancoPorId(req, res) {
+        try {
+            const id = req.params.id;
+            const bancoEncontrado = await Banco.findById(id);
+            res.status(200).json(bancoEncontrado);
+        } catch (erro) {
+            res.status(500).send({ message: `${erro.message} - falha ao listar banco por ID` });
+        }
+    }
+
     static async cadastrarBanco(req, res) {
         try {
             const novoBanco = await Banco.create(req.body);
