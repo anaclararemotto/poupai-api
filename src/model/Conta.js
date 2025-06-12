@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { usuarioSchema } from "./Usuario";
+import { usuarioSchema } from "./Usuario.js";
 
 const contaSchema = new mongoose.Schema({
     id: { type: mongoose.Schema.Types.ObjectId },
