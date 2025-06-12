@@ -1,4 +1,5 @@
 import Transacao from "../model/Transacao.js";
+import ContaController from "./ContaContoller.js";
 
 class TransacaoController {
   static async listarTransacoes(req, res) {
@@ -25,44 +26,64 @@ class TransacaoController {
   }
 
   static async criarTransacoes(req, res) {
-    try {
-      const { tipo, valor, data, categoria, bancoOrigem, bancoDestino } =
-        req.body;
+  try {
+    const { tipo, valor, data, categoria, bancoOrigem, bancoDestino } = req.body;
 
-      if (!["receita", "despesa", "transferencia"].includes(tipo)) {
-        return res.status(400).json({
-          message:
-            "Tipo de transação inválido. Deve ser 'receita', 'despesa' ou 'transferencia'.",
-        });
-      }
-
-      if (valor <= 0 || valor > 5000){
-        return res.status(400).json({
-          message: "Valor inválido. Deve ser maior que 0 e menor ou igual a 5000.",
-        });
-      }
-
-      const novaTransacao = new Transacao({
-        tipo,
-        valor,
-        data: new Date(data),
-        categoria: tipo !== "transferencia" ? categoria : undefined,
-        bancoOrigem: tipo !== "despesa" ? bancoOrigem : undefined,
-        bancoDestino: tipo !== "receita" ? bancoDestino : undefined,
+    if (!["receita", "despesa", "transferencia"].includes(tipo)) {
+      return res.status(400).json({
+        message: "Tipo de transação inválido. Deve ser 'receita', 'despesa' ou 'transferencia'.",
       });
-
-      await novaTransacao.save();
-
-      res.status(201).json({
-        message: "Transação criada com sucesso",
-        transacao: novaTransacao,
-      });
-    } catch (erro) {
-      res
-        .status(500)
-        .json({ message: `Erro ao criar transação: ${erro.message}` });
     }
+
+    if (valor <= 0 || valor > 5000){
+      return res.status(400).json({
+        message: "Valor inválido. Deve ser maior que 0 e menor ou igual a 5000.",
+      });
+    }
+
+    try {
+      if (tipo === "receita") {
+        if (!bancoDestino) {
+          return res.status(400).json({ message: "Conta de destino obrigatória para receita." });
+        }
+        await ContaController.adicionarSaldo(bancoDestino, valor);
+
+      } else if (tipo === "despesa") {
+        if (!bancoOrigem) {
+          return res.status(400).json({ message: "Conta de origem obrigatória para despesa." });
+        }
+        await ContaController.subtrairSaldo(bancoOrigem, valor);
+
+      } else if (tipo === "transferencia") {
+        if (!bancoOrigem || !bancoDestino) {
+          return res.status(400).json({ message: "Contas de origem e destino obrigatórias para transferência." });
+        }
+        await ContaController.transferirSaldo(bancoOrigem, bancoDestino, valor);
+      }
+    } catch (erroSaldo) {
+      return res.status(400).json({ message: `Falha ao atualizar saldo: ${erroSaldo.message}` });
+    }
+
+    const novaTransacao = new Transacao({
+      tipo,
+      valor,
+      data: new Date(data),
+      categoria: tipo !== "transferencia" ? categoria : undefined,
+      bancoOrigem: tipo !== "despesa" ? bancoOrigem : undefined,
+      bancoDestino: tipo !== "receita" ? bancoDestino : undefined,
+    });
+
+    await novaTransacao.save();
+
+    res.status(201).json({
+      message: "Transação criada com sucesso",
+      transacao: novaTransacao,
+    });
+  } catch (erro) {
+    res.status(500).json({ message: `Erro ao criar transação: ${erro.message}` });
   }
+}
+  
 
   static async excluirTransacao(req, res) {
     try {

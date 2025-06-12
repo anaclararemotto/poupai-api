@@ -51,6 +51,42 @@ class ContaController {
       });
     }
   }
+
+  static async adicionarSaldo(contaId, valor) {
+    const conta = await Conta.findById(contaId);
+    if (!conta) throw new Error("Conta não encontrada");
+    
+    conta.saldo += valor;
+    await conta.save();
+    return conta;
+  }
+
+  static async subtrairSaldo(contaId, valor) {
+    const conta = await Conta.findById(contaId);
+    if (!conta) throw new Error("Conta não encontrada");
+
+    if (conta.saldo < valor) throw new Error("Saldo insuficiente");
+    conta.saldo -= valor;
+    await conta.save();
+    return conta;
+  }
+
+  static async transferirSaldo(origemId, destinoId, valor) {
+    const contaOrigem = await Conta.findById(origemId);
+    if (!contaOrigem) throw new Error("Conta de origem não encontrada");
+
+    const contaDestino = await Conta.findById(destinoId);
+    if (!contaDestino) throw new Error("Conta de destino não encontrada");
+
+    if (contaOrigem.saldo < valor) throw new Error("Saldo insuficiente para transferência");
+
+    contaOrigem.saldo -= valor;
+    contaDestino.saldo += valor;
+
+    await Promise.all([contaOrigem.save(), contaDestino.save()]);
+
+    return { contaOrigem, contaDestino };
+  }
 }
 
 export default ContaController;
