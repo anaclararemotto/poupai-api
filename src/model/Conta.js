@@ -7,5 +7,5 @@ const contaSchema = new mongoose.Schema({
     usuario: usuarioSchema
 }, {versionKey: false});
 
-const Conta = mongoose.model("conta", contaSchema);
+const Conta = mongoose.model("contas", contaSchema);
 export default Conta;
