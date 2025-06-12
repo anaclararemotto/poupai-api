@@ -13,9 +13,18 @@ class ContaController {
     }
   }
 
+  static async listarContaPorId(req, res) {
+    try {
+        const id = req.params.id;
+        const contaEncontrada = await Conta.findById(id);
+        res.status(200).json(contaEncontrada);
+    } catch (erro) {
+        res.status(500).send({ message: `${erro.message} - falha ao listar conta por ID` });
+    }
+  }
+
   static async cadastrarConta(req, res) {
     const novaConta = req.body;
-    console.log(req.body);
     
    try {
       const usuarioEncontrado = await Usuario.findById(novaConta.usuario);
