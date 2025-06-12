@@ -56,7 +56,6 @@ class ContaController {
     const conta = await Conta.findById(contaId);
     if (!conta) throw new Error("Conta não encontrada");
     
-    console.log("Saldo anterior:", conta.saldo - valor, "Novo saldo:", conta.saldo);
     conta.saldo += valor;
     await conta.save();
     return conta;

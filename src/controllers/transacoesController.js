@@ -31,7 +31,6 @@ class TransacaoController {
   try {
     const { tipo, valor, data, categoria, bancoOrigem, bancoDestino, conta } = req.body;
 
-    console.log(req.body);
 
     if (!["receita", "despesa", "transferencia"].includes(tipo)) {
       return res.status(400).json({
