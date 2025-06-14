@@ -31,6 +31,18 @@ class BancoController {
             res.status(500).send({ message: `${erro.message} - falha ao cadastrar banco` });
         }
     }
+
+    static async excluirBanco(req, res) {
+        try {
+          const id = req.params.id;
+          await Banco.findByIdAndDelete(id);
+          res.status(200).json({ message: "Banco excluído com sucesso" });
+        } catch (erro) {
+          res
+            .status(500)
+            .json({ message: `Erro ao excluir Banco: ${erro.message}` });
+        }
+      }
 }
 
 export default BancoController;
