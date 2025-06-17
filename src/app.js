@@ -27,6 +27,6 @@ app.use(express.json());
 
 routes(app);
 
-app.listen(4000, () => console.log("API rodando na porta 4000"));
+// app.listen(4000, () => console.log("API rodando na porta 4000"));
 
 export default app;
