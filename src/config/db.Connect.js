@@ -1,8 +1,11 @@
 import mongoose from "mongoose";
 
-async function conectaNaDatabase() {
-    mongoose.connect(process.env.DB_CONNECTION_STRING);
-    return mongoose.connection;
-}
+const conectaNaDatabase = async () => {
+  const DB_URI = process.env.DB_URI ;
+  await mongoose.connect(DB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });
+};
 
 export default conectaNaDatabase;
