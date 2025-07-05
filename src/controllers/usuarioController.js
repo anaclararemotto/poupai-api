@@ -39,9 +39,13 @@ class UsuarioController {
           usuario: usuarioSemSenha,
         });
     } catch (erro) {
+      if (erro.code === 11000 && erro.keyPattern.email) {
+      return res.status(409).json({ message: "Email já cadastrado" });
+    } else {
       res
         .status(500)
         .send({ message: `${erro.message} - falha ao cadastrar usuário` });
+    }
     }
   }
 
