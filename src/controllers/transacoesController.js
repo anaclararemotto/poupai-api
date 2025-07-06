@@ -78,12 +78,10 @@ class TransacaoController {
           await ContaController.subtrairSaldo(conta, valor);
         } else if (tipo === "transferencia") {
           if (!bancoOrigem || !bancoDestino) {
-            return res
-              .status(400)
-              .json({
-                message:
-                  "Contas de origem e destino obrigatórias para transferência.",
-              });
+            return res.status(400).json({
+              message:
+                "Contas de origem e destino obrigatórias para transferência.",
+            });
           }
           await ContaController.transferirSaldo(conta, conta, valor);
         }
@@ -94,14 +92,19 @@ class TransacaoController {
       }
 
       const novaTransacao = new Transacao({
-  tipo,
-  valor,
-  categoria: tipo !== "transferencia" ? categoria : undefined,
-  bancoOrigem: tipo === "despesa" || tipo === "transferencia" ? bancoOrigem : undefined,
-  bancoDestino: tipo === "receita" || tipo === "transferencia" ? bancoDestino : undefined,
-  conta,
-});
-
+        tipo,
+        valor,
+        categoria: tipo !== "transferencia" ? categoria : undefined,
+        bancoOrigem:
+          tipo === "despesa" || tipo === "transferencia"
+            ? bancoOrigem
+            : undefined,
+        bancoDestino:
+          tipo === "receita" || tipo === "transferencia"
+            ? bancoDestino
+            : undefined,
+        conta,
+      });
 
       await novaTransacao.save();
 
@@ -128,6 +131,101 @@ class TransacaoController {
       res
         .status(500)
         .json({ message: `Erro ao excluir transação: ${erro.message}` });
+    }
+  }
+
+  static async editarTransacao(req, res) {
+    try {
+      const id = req.params.id;
+      const dadosAtualizados = req.body;
+
+      const transacao = await Transacao.findById(id);
+      if (!transacao) {
+        return res.status(400).json({ message: "Transação não encontrada." });
+      }
+
+      const conta = await Conta.findById(transacao.conta);
+      if (!conta) {
+        return res.status(400).json({ message: "Conta não encontrada." });
+      }
+
+      if (transacao.tipo === "receita") {
+        await ContaController.subtrairSaldo(conta._id, transacao.valor);
+      } else if (transacao.tipo === "despesa") {
+        await ContaController.adicionarSaldo(conta._id, transacao.valor);
+      } else if (transacao.tipo === "transferencia") {
+        await ContaController.transferirSaldo(
+          transacao.bancoDestino,
+          transacao.bancoOrigem,
+          transacao.valor
+        );
+      }
+
+      const {
+        tipo,
+        valor,
+        categoria,
+        bancoOrigem,
+        bancoDestino,
+        conta: novaContaId,
+      } = dadosAtualizados;
+
+      if (!["receita", "despesa", "transferencia"].includes(tipo)) {
+        return res.status(400).json({ message: "Tipo inválido." });
+      }
+
+      if (valor <= 0 || valor > 5000) {
+        return res
+          .status(400)
+          .json({
+            message: "Valor inválido. Deve ser maior que 0 e até 5000.",
+          });
+      }
+
+      if (tipo === "receita") {
+        await ContaController.adicionarSaldo(novaContaId, valor);
+      } else if (tipo === "despesa") {
+        const contaDestino = await Conta.findById(novaContaId);
+        if (contaDestino.saldo < valor) {
+          return res
+            .status(400)
+            .json({ message: "Saldo insuficiente para despesa." });
+        }
+        await ContaController.subtrairSaldo(novaContaId, valor);
+      } else if (tipo === "transferencia") {
+        await ContaController.transferirSaldo(bancoOrigem, bancoDestino, valor);
+      }
+
+      const transacaoAtualizada = await Transacao.findByIdAndUpdate(
+        id,
+        {
+          tipo,
+          valor,
+          categoria: tipo !== "transferencia" ? categoria : undefined,
+          bancoOrigem:
+            tipo === "despesa" || tipo === "transferencia"
+              ? bancoOrigem
+              : undefined,
+          bancoDestino:
+            tipo === "receita" || tipo === "transferencia"
+              ? bancoDestino
+              : undefined,
+          conta: novaContaId,
+        },
+        { new: true }
+      );
+
+      const saldoAtual = (await Conta.findById(novaContaId)).saldo;
+
+      res.status(200).json({
+        message: "Transação atualizada com sucesso.",
+        transacao: transacaoAtualizada,
+        saldoAtual,
+      });
+    } catch (erro) {
+      res
+        .status(500)
+        .json({ message: `Erro ao editar transação: ${erro.message}` });
     }
   }
 }
