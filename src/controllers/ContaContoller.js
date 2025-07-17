@@ -2,6 +2,21 @@ import Conta from "../model/Conta.js";
 import {Usuario} from "../model/Usuario.js";
 
 class ContaController {
+   static async minhaConta(req, res) {
+    try {
+      const usuarioId = req.user.id; 
+
+      const conta = await Conta.findOne({ "usuario._id": usuarioId });
+
+      if (!conta) {
+        return res.status(404).json({ message: "Conta não encontrada para este usuário." });
+      }
+
+      res.status(200).json(conta);
+    } catch (error) {
+      res.status(500).json({ message: `Erro ao buscar conta: ${error.message}` });
+    }
+  }
   static async listarContas(req, res) {
     try {
       const contas = await Conta.find({});

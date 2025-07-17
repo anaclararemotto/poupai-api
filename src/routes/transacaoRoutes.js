@@ -1,7 +1,10 @@
 import express from "express";
 import TransacaoController from "../controllers/transacoesController.js";
+import { autenticarJWT } from "../auth/auth.js";
 
 const router = express.Router();
+
+router.use(autenticarJWT);
 
 router.get("/transacoes", TransacaoController.listarTransacoes);
 router.get("/transacoes/:id", TransacaoController.listarTransacoesPorId);
