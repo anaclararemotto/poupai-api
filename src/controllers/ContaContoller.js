@@ -102,6 +102,22 @@ class ContaController {
 
     return { contaOrigem, contaDestino };
   }
+
+  static async obterContaDoUsuario(req, res) {
+  try {
+    const usuarioId = req.user.id;
+
+    const conta = await Conta.findOne({ usuario: usuarioId });
+
+    if (!conta) {
+      return res.status(404).json({ message: "Conta não encontrada para o usuário." });
+    }
+
+    return res.status(200).json(conta);
+  } catch (error) {
+    return res.status(500).json({ message: "Erro ao buscar conta do usuário." });
+  }
+}
 }
 
 export default ContaController;

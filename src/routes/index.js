@@ -1,4 +1,3 @@
-// src/routes/index.js (VERSÃO CORRIGIDA)
 import express from "express";
 import banco from "./bancoRoutes.js";
 import categoria from "./categoriaRoutes.js";

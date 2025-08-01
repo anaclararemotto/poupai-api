@@ -52,7 +52,7 @@ class TransacaoController {
     try {
       const { tipo, valor, categoria, bancoOrigem, bancoDestino } = req.body;
 
-      const contaUsuario = await Conta.findOne({ "usuario._id": req.user.id });
+      const contaUsuario = await Conta.findOne({ usuario: req.user.id });
       if (!contaUsuario) {
         return res.status(404).json({ message: "Conta do usuário não encontrada." });
       }
