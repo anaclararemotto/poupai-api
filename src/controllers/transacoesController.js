@@ -60,11 +60,18 @@ class TransacaoController {
     }
   }
 
-  static async criarTransacoes(req, res) {
+ static async criarTransacoes(req, res) {
     try {
-      const { tipo, valor, categoria, bancoOrigem, bancoDestino } = req.body;
+      const { tipo, valor, categoria, bancoOrigem, bancoDestino, data, conta } = req.body; x
 
-      const contaUsuario = await Conta.findOne({ usuario: req.user.id });
+      const valorLimpo = String(valor).replace(/[R$\s.]/g, '').replace(',', '.');
+      const valorNumerico = Number(valorLimpo);
+
+      if (isNaN(valorNumerico) || valorNumerico <= 0 || valorNumerico > 5000) {
+        return res.status(400).json({ message: "Valor inválido." });
+      }
+
+      const contaUsuario = await Conta.findOne({ usuario: req.user.id }); 
       if (!contaUsuario) {
         return res
           .status(404)
@@ -75,13 +82,9 @@ class TransacaoController {
         return res.status(400).json({ message: "Tipo de transação inválido." });
       }
 
-      if (valor <= 0 || valor > 5000) {
-        return res.status(400).json({ message: "Valor inválido." });
-      }
-
       if (
         (tipo === "despesa" || tipo === "transferencia") &&
-        contaUsuario.saldo < valor
+        contaUsuario.saldo < valorNumerico 
       ) {
         return res
           .status(400)
@@ -94,14 +97,14 @@ class TransacaoController {
             .status(400)
             .json({ message: "Conta de destino obrigatória para receita." });
         }
-        await ContaController.adicionarSaldo(contaUsuario._id, valor);
+        await ContaController.adicionarSaldo(contaUsuario._id, valorNumerico);
       } else if (tipo === "despesa") {
         if (!bancoOrigem) {
           return res
             .status(400)
             .json({ message: "Conta de origem obrigatória para despesa." });
         }
-        await ContaController.subtrairSaldo(contaUsuario._id, valor);
+        await ContaController.subtrairSaldo(contaUsuario._id, valorNumerico);
       } else if (tipo === "transferencia") {
         if (!bancoOrigem || !bancoDestino) {
           return res.status(400).json({
@@ -110,15 +113,16 @@ class TransacaoController {
           });
         }
         await ContaController.transferirSaldo(
-          contaUsuario._id,
-          contaUsuario._id,
-          valor
+          bancoOrigem,
+          bancoDestino,
+          valorNumerico
         );
       }
 
       const novaTransacao = new Transacao({
         tipo,
-        valor,
+        valor: valorNumerico, 
+        data: new Date(data).toISOString(), 
         categoria: tipo !== "transferencia" ? categoria : undefined,
         bancoOrigem:
           tipo === "despesa" || tipo === "transferencia"
@@ -141,6 +145,7 @@ class TransacaoController {
         saldoAtual: contaAtualizada.saldo,
       });
     } catch (erro) {
+      console.error("Erro ao criar transação:", erro); 
       res
         .status(500)
         .json({ message: `Erro ao criar transação: ${erro.message}` });
@@ -190,7 +195,6 @@ class TransacaoController {
     }
     console.log("Editar Transação: Transação Original", transacao);
 
-    // CORREÇÃO AQUI: Use 'usuario: req.user.id' para encontrar a conta do usuário
     const contaUsuario = await Conta.findOne({ usuario: req.user.id });
     if (!contaUsuario) {
       return res
@@ -209,10 +213,8 @@ class TransacaoController {
       return res.status(404).json({ message: "Conta não encontrada." });
     }
     console.log("Editar Transação: Conta Associada à Transação", conta);
-
-    // --- Reverter o saldo da transação original ---
     console.log("Editar Transação: Revertendo saldo original...");
-    const valorOriginal = Number(transacao.valor); // Garante que é um número
+    const valorOriginal = Number(transacao.valor); 
     if (isNaN(valorOriginal)) {
         throw new Error("Valor original da transação inválido (não é um número).");
     }
@@ -224,12 +226,6 @@ class TransacaoController {
       await ContaController.adicionarSaldo(conta._id, valorOriginal);
       console.log(`Revertida Despesa: Adicionado ${valorOriginal} a conta ${conta._id}`);
     } else if (transacao.tipo === "transferencia") {
-      // Para transferência, reverte a transferência original
-      // ATENÇÃO: Aqui transacao.bancoDestino e transacao.bancoOrigem são IDs de BANCOS,
-      // mas transferirSaldo espera IDs de CONTAS.
-      // Se transferirSaldo move entre contas, você precisa do ID da CONTA, não do BANCO.
-      // Se a transferência é DENTRO da mesma conta, esta reversão é desnecessária.
-      // Se o erro for aqui, é porque ContaController.transferirSaldo falha com IDs de banco.
       await ContaController.transferirSaldo(
         transacao.bancoDestino,
         transacao.bancoOrigem,
@@ -241,16 +237,14 @@ class TransacaoController {
 
     const {
       tipo,
-      valor, // Este é o valor ATUALIZADO que vem do frontend
+      valor, 
       categoria,
       bancoOrigem,
       bancoDestino,
     } = dadosAtualizados;
 
-    // --- Validações e Limpeza para os dados atualizados ---
-    // NOVO: Limpa o valor para garantir que é um número válido
     const valorLimpo = String(valor).replace(/[R$\s.]/g, '').replace(',', '.');
-    const novoValor = Number(valorLimpo); // GARANTE QUE O NOVO VALOR É UM NÚMERO
+    const novoValor = Number(valorLimpo); 
     
     if (isNaN(novoValor)) {
         throw new Error(`Novo valor da transação inválido: '${valor}' (não é um número após limpeza).`);
@@ -266,7 +260,6 @@ class TransacaoController {
     console.log("Editar Transação: Novo Valor (numérico e limpo)", novoValor);
 
 
-    // --- Aplica o novo saldo com base nos dados atualizados ---
     console.log("Editar Transação: Aplicando novo saldo...");
     if (tipo === "receita") {
       await ContaController.adicionarSaldo(conta._id, novoValor);
@@ -291,7 +284,7 @@ class TransacaoController {
       id,
       {
         tipo,
-        valor: novoValor, // Salva o valor como número no DB
+        valor: novoValor, 
         categoria: tipo !== "transferencia" ? categoria : undefined,
         bancoOrigem:
           tipo === "despesa" || tipo === "transferencia"
@@ -309,7 +302,6 @@ class TransacaoController {
     console.log("Editar Transação: Transação atualizada no DB.");
 
 
-    // Recarrega o saldo da conta para a resposta
     const saldoAtual = (await Conta.findById(conta._id)).saldo;
     console.log("Editar Transação: Saldo Final da Conta", saldoAtual);
 
