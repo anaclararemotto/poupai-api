@@ -16,7 +16,8 @@ class TransacaoController {
 
       const listarTransacoes = await Transacao.find({ conta: contaUsuario._id })
         .populate("bancoOrigem", "nome")
-        .populate("bancoDestino", "nome");
+        .populate("bancoDestino", "nome")
+        .populate("categoria", "nome");
 
       res.status(200).json(listarTransacoes);
     } catch (erro) {
