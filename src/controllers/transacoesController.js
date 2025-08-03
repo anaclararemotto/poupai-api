@@ -6,12 +6,14 @@ import mongoose from "mongoose";
 class TransacaoController {
   static async listarTransacoes(req, res) {
     try {
-      const contaUsuario = await Conta.findOne({ "usuario._id": req.user.id });
+      const contaUsuario = await Conta.findOne({ usuario: req.user.id });
+
       if (!contaUsuario) {
         return res
           .status(404)
           .json({ message: "Conta do usuário não encontrada" });
       }
+
       const listarTransacoes = await Transacao.find({ conta: contaUsuario._id })
         .populate("bancoOrigem", "nome")
         .populate("bancoDestino", "nome");
