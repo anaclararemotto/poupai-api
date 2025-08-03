@@ -156,7 +156,7 @@ class TransacaoController {
         return res.status(404).json({ message: "Transação não encontrada." });
       }
 
-      const contaUsuario = await Conta.findOne({ "usuario._id": req.user.id });
+      const contaUsuario = await Conta.findOne({ usuario: req.user.id });
       if (!contaUsuario) {
         return res
           .status(404)
