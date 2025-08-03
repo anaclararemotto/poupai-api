@@ -1,8 +1,8 @@
 import { Usuario } from "../model/Usuario.js";
-import Conta from "../model/Conta.js"; // Certifique-se de que o caminho está correto
+import Conta from "../model/Conta.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import { segredo } from "../auth/auth.js"; // Certifique-se de que o caminho está correto
+import { segredo } from "../auth/auth.js";
 
 class UsuarioController {
   static async listarUsuarios(req, res) {
@@ -41,7 +41,7 @@ class UsuarioController {
       const novoUsuario = new Usuario({
         nome,
         email,
-        senha, 
+        senha,
       });
 
       await novoUsuario.save();
@@ -142,11 +142,9 @@ class UsuarioController {
       ).select("-senha");
 
       if (!usuarioCompleto) {
-        return res
-          .status(404)
-          .json({
-            message: "Usuário logado não encontrado no banco de dados.",
-          });
+        return res.status(404).json({
+          message: "Usuário logado não encontrado no banco de dados.",
+        });
       }
 
       res.status(200).json({
