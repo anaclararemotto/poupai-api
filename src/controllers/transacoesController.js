@@ -176,107 +176,158 @@ class TransacaoController {
     }
   }
 
-  static async editarTransacao(req, res) {
-    try {
-      const id = req.params.id;
-      const dadosAtualizados = req.body;
+ static async editarTransacao(req, res) {
+  try {
+    const id = req.params.id;
+    const dadosAtualizados = req.body;
 
-      const transacao = await Transacao.findById(id);
-      if (!transacao) {
-        return res.status(404).json({ message: "Transação não encontrada." });
-      }
+    console.log("Editar Transação: ID", id);
+    console.log("Editar Transação: Dados Recebidos", dadosAtualizados);
 
-      const contaUsuario = await Conta.findOne({ "usuario._id": req.user.id });
-      if (!contaUsuario) {
-        return res
-          .status(404)
-          .json({ message: "Conta do usuário não encontrada." });
-      }
-
-      if (transacao.conta.toString() !== contaUsuario._id.toString()) {
-        return res.status(403).json({ message: "Acesso negado à transação." });
-      }
-
-      const conta = await Conta.findById(transacao.conta);
-      if (!conta) {
-        return res.status(404).json({ message: "Conta não encontrada." });
-      }
-
-      if (transacao.tipo === "receita") {
-        await ContaController.subtrairSaldo(conta._id, transacao.valor);
-      } else if (transacao.tipo === "despesa") {
-        await ContaController.adicionarSaldo(conta._id, transacao.valor);
-      } else if (transacao.tipo === "transferencia") {
-        await ContaController.transferirSaldo(
-          transacao.bancoDestino,
-          transacao.bancoOrigem,
-          transacao.valor
-        );
-      }
-
-      const {
-        tipo,
-        valor,
-        categoria,
-        bancoOrigem,
-        bancoDestino,
-        conta: novaContaId,
-      } = dadosAtualizados;
-
-      if (!["receita", "despesa", "transferencia"].includes(tipo)) {
-        return res.status(400).json({ message: "Tipo inválido." });
-      }
-
-      if (valor <= 0 || valor > 5000) {
-        return res.status(400).json({ message: "Valor inválido." });
-      }
-
-      if (tipo === "receita") {
-        await ContaController.adicionarSaldo(novaContaId, valor);
-      } else if (tipo === "despesa") {
-        const contaDestino = await Conta.findById(novaContaId);
-        if (contaDestino.saldo < valor) {
-          return res
-            .status(400)
-            .json({ message: "Saldo insuficiente para despesa." });
-        }
-        await ContaController.subtrairSaldo(novaContaId, valor);
-      } else if (tipo === "transferencia") {
-        await ContaController.transferirSaldo(bancoOrigem, bancoDestino, valor);
-      }
-
-      const transacaoAtualizada = await Transacao.findByIdAndUpdate(
-        id,
-        {
-          tipo,
-          valor,
-          categoria: tipo !== "transferencia" ? categoria : undefined,
-          bancoOrigem:
-            tipo === "despesa" || tipo === "transferencia"
-              ? bancoOrigem
-              : undefined,
-          bancoDestino:
-            tipo === "receita" || tipo === "transferencia"
-              ? bancoDestino
-              : undefined,
-          conta: novaContaId,
-        },
-        { new: true }
-      );
-
-      const saldoAtual = (await Conta.findById(novaContaId)).saldo;
-
-      res.status(200).json({
-        message: "Transação atualizada com sucesso.",
-        transacao: transacaoAtualizada,
-        saldoAtual,
-      });
-    } catch (erro) {
-      res
-        .status(500)
-        .json({ message: `Erro ao editar transação: ${erro.message}` });
+    const transacao = await Transacao.findById(id);
+    if (!transacao) {
+      return res.status(404).json({ message: "Transação não encontrada." });
     }
+    console.log("Editar Transação: Transação Original", transacao);
+
+    // CORREÇÃO AQUI: Use 'usuario: req.user.id' para encontrar a conta do usuário
+    const contaUsuario = await Conta.findOne({ usuario: req.user.id });
+    if (!contaUsuario) {
+      return res
+        .status(404)
+        .json({ message: "Conta do usuário não encontrada." });
+    }
+    console.log("Editar Transação: Conta do Usuário", contaUsuario);
+
+
+    if (transacao.conta.toString() !== contaUsuario._id.toString()) {
+      return res.status(403).json({ message: "Acesso negado à transação." });
+    }
+
+    const conta = await Conta.findById(transacao.conta);
+    if (!conta) {
+      return res.status(404).json({ message: "Conta não encontrada." });
+    }
+    console.log("Editar Transação: Conta Associada à Transação", conta);
+
+    // --- Reverter o saldo da transação original ---
+    console.log("Editar Transação: Revertendo saldo original...");
+    const valorOriginal = Number(transacao.valor); // Garante que é um número
+    if (isNaN(valorOriginal)) {
+        throw new Error("Valor original da transação inválido (não é um número).");
+    }
+
+    if (transacao.tipo === "receita") {
+      await ContaController.subtrairSaldo(conta._id, valorOriginal);
+      console.log(`Revertida Receita: Subtraído ${valorOriginal} de conta ${conta._id}`);
+    } else if (transacao.tipo === "despesa") {
+      await ContaController.adicionarSaldo(conta._id, valorOriginal);
+      console.log(`Revertida Despesa: Adicionado ${valorOriginal} a conta ${conta._id}`);
+    } else if (transacao.tipo === "transferencia") {
+      // Para transferência, reverte a transferência original
+      // ATENÇÃO: Aqui transacao.bancoDestino e transacao.bancoOrigem são IDs de BANCOS,
+      // mas transferirSaldo espera IDs de CONTAS.
+      // Se transferirSaldo move entre contas, você precisa do ID da CONTA, não do BANCO.
+      // Se a transferência é DENTRO da mesma conta, esta reversão é desnecessária.
+      // Se o erro for aqui, é porque ContaController.transferirSaldo falha com IDs de banco.
+      await ContaController.transferirSaldo(
+        transacao.bancoDestino,
+        transacao.bancoOrigem,
+        valorOriginal
+      );
+      console.log(`Revertida Transferência: ${valorOriginal} de ${transacao.bancoDestino} para ${transacao.bancoOrigem}`);
+    }
+    console.log("Editar Transação: Saldo original revertido.");
+
+    const {
+      tipo,
+      valor, // Este é o valor ATUALIZADO que vem do frontend
+      categoria,
+      bancoOrigem,
+      bancoDestino,
+    } = dadosAtualizados;
+
+    // --- Validações e Limpeza para os dados atualizados ---
+    // NOVO: Limpa o valor para garantir que é um número válido
+    const valorLimpo = String(valor).replace(/[R$\s.]/g, '').replace(',', '.');
+    const novoValor = Number(valorLimpo); // GARANTE QUE O NOVO VALOR É UM NÚMERO
+    
+    if (isNaN(novoValor)) {
+        throw new Error(`Novo valor da transação inválido: '${valor}' (não é um número após limpeza).`);
+    }
+
+    if (!["receita", "despesa", "transferencia"].includes(tipo)) {
+      return res.status(400).json({ message: "Tipo inválido." });
+    }
+
+    if (novoValor <= 0 || novoValor > 5000) {
+      return res.status(400).json({ message: "Valor inválido (deve ser entre 0.01 e 5000)." });
+    }
+    console.log("Editar Transação: Novo Valor (numérico e limpo)", novoValor);
+
+
+    // --- Aplica o novo saldo com base nos dados atualizados ---
+    console.log("Editar Transação: Aplicando novo saldo...");
+    if (tipo === "receita") {
+      await ContaController.adicionarSaldo(conta._id, novoValor);
+      console.log(`Aplicada Receita: Adicionado ${novoValor} a conta ${conta._id}`);
+    } else if (tipo === "despesa") {
+      const contaAtualizadaParaVerificacao = await Conta.findById(conta._id);
+      if (contaAtualizadaParaVerificacao.saldo < novoValor) {
+        return res
+          .status(400)
+          .json({ message: "Saldo insuficiente para despesa." });
+      }
+      await ContaController.subtrairSaldo(conta._id, novoValor);
+      console.log(`Aplicada Despesa: Subtraído ${novoValor} de conta ${conta._id}`);
+    } else if (tipo === "transferencia") {
+      await ContaController.transferirSaldo(bancoOrigem, bancoDestino, novoValor);
+      console.log(`Aplicada Transferência: ${novoValor} de ${bancoOrigem} para ${bancoDestino}`);
+    }
+    console.log("Editar Transação: Novo saldo aplicado.");
+
+
+    const transacaoAtualizada = await Transacao.findByIdAndUpdate(
+      id,
+      {
+        tipo,
+        valor: novoValor, // Salva o valor como número no DB
+        categoria: tipo !== "transferencia" ? categoria : undefined,
+        bancoOrigem:
+          tipo === "despesa" || tipo === "transferencia"
+            ? bancoOrigem
+            : undefined,
+        bancoDestino:
+          tipo === "receita" || tipo === "transferencia"
+            ? bancoDestino
+            : undefined,
+        conta: conta._id,
+        data: dadosAtualizados.data || transacao.data
+      },
+      { new: true }
+    );
+    console.log("Editar Transação: Transação atualizada no DB.");
+
+
+    // Recarrega o saldo da conta para a resposta
+    const saldoAtual = (await Conta.findById(conta._id)).saldo;
+    console.log("Editar Transação: Saldo Final da Conta", saldoAtual);
+
+
+    res.status(200).json({
+      message: "Transação atualizada com sucesso.",
+      transacao: transacaoAtualizada,
+      saldoAtual,
+    });
+  } catch (erro) {
+    console.error("Erro no editarTransacao:", erro);
+    res
+      .status(500)
+      .json({ message: `Erro ao editar transação: ${erro.message}` });
   }
+}
+
+
 
   static async totalReceitasMes(req, res) {
     try {

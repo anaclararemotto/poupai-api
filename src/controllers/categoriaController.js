@@ -20,6 +20,16 @@ class CategoriaController {
         }
     }
 
+    static async listarCategoriasPorTipo(req, res) {
+    try {
+      const tipo = req.params.tipo; // Pega o tipo da URL
+      const categorias = await Categoria.find({ tipo: tipo }); // Filtra por tipo
+      res.status(200).json(categorias);
+    } catch (error) {
+      res.status(500).json({ message: `Erro ao listar categorias por tipo: ${error.message}` });
+    }
+  }
+
     static async cadastrarCategoria(req, res) {
             try {
                 const novaCategoria = await Categoria.create(req.body);
