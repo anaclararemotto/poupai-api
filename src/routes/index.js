@@ -14,11 +14,11 @@ const routes = (app) => {
 
   app.use(express.json());
   app.use("/auth", usuarioRouter);
+  app.use("/transacao", autenticarJWT, transacao);
   app.get("/usuario/me", autenticarJWT, UsuarioController.obterUsuarioLogado);
   app.get("/usuario", autenticarJWT, UsuarioController.listarUsuarios);
   app.use("/banco", autenticarJWT, banco);
   app.use("/conta", autenticarJWT, conta);
-  app.use("/transacao", autenticarJWT, transacao);
   app.use("/categoria", autenticarJWT, categoria);
 };
 
