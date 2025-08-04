@@ -10,7 +10,7 @@ const transacaoSchema = new mongoose.Schema(
     },
     valor: { type: Number, required: true },
     data: { type: Date, required: true, default: Date.now },
-    categoria: { type: mongoose.Schema.Types.ObjectId, ref: "categoria" },
+    categoria: { type: mongoose.Schema.Types.ObjectId, ref: "categoria", required: false },
     bancoOrigem: { type: mongoose.Schema.Types.ObjectId, ref: "bancos" },
     bancoDestino: { type: mongoose.Schema.Types.ObjectId, ref: "bancos" },
     conta: {
