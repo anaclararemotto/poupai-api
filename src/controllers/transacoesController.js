@@ -2,7 +2,10 @@ import Conta from "../model/Conta.js";
 import Transacao from "../model/Transacao.js";
 import ContaController from "./ContaContoller.js";
 import mongoose from "mongoose";
-import { zonedTimeToUtc } from 'date-fns-tz';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { zonedTimeToUtc } = require('date-fns-tz');
+
 
 class TransacaoController {
 
@@ -86,6 +89,11 @@ static async criarTransacoes(req, res) {
       return res.status(400).json({ message: "Tipo de transação inválido." });
     }
 
+    // Validação obrigatória de bancoOrigem e bancoDestino para receita e despesa
+    if ((tipo === "receita" || tipo === "despesa") && (!bancoOrigem || !bancoDestino)) {
+      return res.status(400).json({ message: "Banco origem e destino são obrigatórios para receita e despesa." });
+    }
+
     if (tipo === "despesa" && contaUsuario.saldo < valorNumerico) {
       return res.status(400).json({ message: "Saldo insuficiente para despesa." });
     }
@@ -101,10 +109,8 @@ static async criarTransacoes(req, res) {
       }
     }
 
-   const timeZone = 'America/Sao_Paulo';
-const dataCorrigida = zonedTimeToUtc(`${data} 12:00:00`, timeZone);
-
-
+    const timeZone = 'America/Sao_Paulo';
+    const dataCorrigida = zonedTimeToUtc(`${data} 12:00:00`, timeZone);
 
     const novaTransacao = new Transacao({
       tipo,
@@ -138,6 +144,8 @@ const dataCorrigida = zonedTimeToUtc(`${data} 12:00:00`, timeZone);
     res.status(500).json({ message: `Erro ao criar transação: ${erro.message}` });
   }
 }
+
+
 
 
 
