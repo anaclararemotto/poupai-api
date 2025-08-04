@@ -96,7 +96,6 @@ class TransacaoController {
       }
     }
 
-    // Validação de bancos
     if (["despesa", "transferencia"].includes(tipo)) {
       const bancoOrigemExiste = await Banco.findById(bancoOrigem);
       if (!bancoOrigemExiste) {
@@ -487,6 +486,127 @@ static async excluirTransacao(req, res) {
         message: "Erro ao obter total de despesas",
         error: error.message,
       });
+    }
+  }
+
+ static async getReceitasPorCategoriaMes(req, res) {
+  console.log('API Receitas-mes acionada!');
+    try {
+      const usuarioId = req.user.id;
+      const conta = await Conta.findOne({ usuario: usuarioId });
+
+      if (!conta) {
+        return res.status(404).json({ message: "Conta do usuário não encontrada." });
+      }
+
+      const inicioMes = new Date();
+      inicioMes.setDate(1);
+      inicioMes.setHours(0, 0, 0, 0);
+
+      const fimMes = new Date(inicioMes);
+      fimMes.setMonth(fimMes.getMonth() + 1);
+      fimMes.setDate(0);
+      fimMes.setHours(23, 59, 59, 999);
+      
+      const receitasPorCategoria = await Transacao.aggregate([
+        {
+          $match: {
+            conta: new mongoose.Types.ObjectId(conta._id),
+            tipo: "receita",
+            data: { $gte: inicioMes, $lte: fimMes },
+          },
+        },
+        {
+          $group: {
+            _id: "$categoria",
+            total: { $sum: "$valor" },
+          },
+        },
+        {
+          $lookup: {
+            from: 'categorias',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'categoriaInfo'
+          }
+        },
+        {
+          $unwind: {
+            path: '$categoriaInfo',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $project: { 
+            _id: { $ifNull: ['$categoriaInfo.nome', 'Sem Categoria'] }, 
+            total: 1
+          }
+        }
+      ]);
+
+      res.status(200).json(receitasPorCategoria);
+    } catch (error) {
+      res.status(500).json({ message: `Erro ao obter receitas por categoria: ${error.message}` });
+    }
+  }
+
+  static async getDespesasPorCategoriaMes(req, res) {
+    try {
+      const usuarioId = req.user.id;
+      const conta = await Conta.findOne({ usuario: usuarioId });
+
+      if (!conta) {
+        return res.status(404).json({ message: "Conta do usuário não encontrada." });
+      }
+
+      const inicioMes = new Date();
+      inicioMes.setDate(1);
+      inicioMes.setHours(0, 0, 0, 0);
+
+      const fimMes = new Date(inicioMes);
+      fimMes.setMonth(fimMes.getMonth() + 1);
+      fimMes.setDate(0);
+      fimMes.setHours(23, 59, 59, 999);
+      
+      const despesasPorCategoria = await Transacao.aggregate([
+        {
+          $match: {
+            conta: new mongoose.Types.ObjectId(conta._id),
+            tipo: "despesa",
+            data: { $gte: inicioMes, $lte: fimMes },
+          },
+        },
+        {
+          $group: {
+            _id: "$categoria",
+            total: { $sum: "$valor" },
+          },
+        },
+        {
+          $lookup: {
+            from: 'categorias',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'categoriaInfo'
+          }
+        },
+        {
+          $unwind: {
+            path: '$categoriaInfo',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $project: { 
+            _id: { $ifNull: ['$categoriaInfo.nome', 'Sem Categoria'] },
+            total: 1
+          }
+        }
+      ]);
+
+      res.status(200).json(despesasPorCategoria);
+    } catch (error) {
+      res.status(500).json({ message: `Erro ao obter despesas por categoria: ${error.message}` });
     }
   }
 }
