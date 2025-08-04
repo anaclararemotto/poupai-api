@@ -8,40 +8,33 @@ const { zonedTimeToUtc } = require('date-fns-tz');
 
 
 class TransacaoController {
-
-  
   static async listarTransacoes(req, res) {
     try {
-      const usuarioId = req.user.id;
+      const contaUsuario = await Conta.findOne({ usuario: req.user.id });
 
-      const contas = await Conta.find({ usuario: usuarioId });
-
-      if (!contas || contas.length === 0) {
-        return res.status(404).json({ message: "Conta do usuário não encontrada" });
+      if (!contaUsuario) {
+        return res
+          .status(404)
+          .json({ message: "Conta do usuário não encontrada" });
       }
 
-      const contaIds = contas.map((conta) => conta._id);
-
-      const transacoes = await Transacao.find({ conta: { $in: contaIds } })
-        .populate("categoria", "nome")
-        .populate("conta", "apelido")
+      const listarTransacoes = await Transacao.find({ conta: contaUsuario._id })
         .populate("bancoOrigem", "nome")
         .populate("bancoDestino", "nome")
-        .sort({ data: -1 });
+        .populate("categoria", "nome");
 
-      res.status(200).json(transacoes);
-    } catch (error) {
-      res.status(500).json({
-        message: "Erro ao listar transações",
-        error,
-      });
+      res.status(200).json(listarTransacoes);
+    } catch (erro) {
+      res
+        .status(500)
+        .send({ message: `${erro.message} - falha ao listar transações` });
     }
   }
-
 
   static async listarTransacoesPorId(req, res) {
     try {
       const id = req.params.id;
+
       const transacaoEncontrada = await Transacao.findById(id)
         .populate("bancoOrigem", "nome")
         .populate("bancoDestino", "nome");
@@ -57,7 +50,9 @@ class TransacaoController {
           .json({ message: "Conta do usuário não encontrada." });
       }
 
-      if (transacaoEncontrada.conta.toString() !== contaUsuario._id.toString()) {
+      if (
+        transacaoEncontrada.conta.toString() !== contaUsuario._id.toString()
+      ) {
         return res.status(403).json({ message: "Acesso negado à transação." });
       }
 
@@ -69,34 +64,36 @@ class TransacaoController {
     }
   }
 
-static async criarTransacoes(req, res) {
-  try {
-    const { tipo, valor, categoria, bancoOrigem, bancoDestino, data } = req.body;
+ static async criarTransacoes(req, res) {
+    try {
+      const { tipo, valor, categoria, bancoOrigem, bancoDestino, data, conta } = req.body; x
 
-    const valorLimpo = String(valor).replace(/[R$\s.]/g, '').replace(',', '.');
-    const valorNumerico = Number(valorLimpo);
+      const valorLimpo = String(valor).replace(/[R$\s.]/g, '').replace(',', '.');
+      const valorNumerico = Number(valorLimpo);
 
-    if (isNaN(valorNumerico) || valorNumerico <= 0 || valorNumerico > 5000) {
-      return res.status(400).json({ message: "Valor inválido." });
-    }
+      if (isNaN(valorNumerico) || valorNumerico <= 0 || valorNumerico > 5000) {
+        return res.status(400).json({ message: "Valor inválido." });
+      }
 
-    const contaUsuario = await Conta.findOne({ usuario: req.user.id });
-    if (!contaUsuario) {
-      return res.status(404).json({ message: "Conta do usuário não encontrada." });
-    }
+      const contaUsuario = await Conta.findOne({ usuario: req.user.id }); 
+      if (!contaUsuario) {
+        return res
+          .status(404)
+          .json({ message: "Conta do usuário não encontrada." });
+      }
 
     if (!["receita", "despesa", "transferencia"].includes(tipo)) {
       return res.status(400).json({ message: "Tipo de transação inválido." });
     }
 
-    // Validação obrigatória de bancoOrigem e bancoDestino para receita e despesa
-    if ((tipo === "receita" || tipo === "despesa") && (!bancoOrigem || !bancoDestino)) {
-      return res.status(400).json({ message: "Banco origem e destino são obrigatórios para receita e despesa." });
-    }
-
-    if (tipo === "despesa" && contaUsuario.saldo < valorNumerico) {
-      return res.status(400).json({ message: "Saldo insuficiente para despesa." });
-    }
+      if (
+        (tipo === "despesa" || tipo === "transferencia") &&
+        contaUsuario.saldo < valorNumerico 
+      ) {
+        return res
+          .status(400)
+          .json({ message: `Saldo insuficiente para ${tipo}.` });
+      }
 
     if (tipo === "transferencia") {
       const contaDestino = await Conta.findById(bancoDestino);
@@ -109,30 +106,30 @@ static async criarTransacoes(req, res) {
       }
     }
 
-    const timeZone = 'America/Sao_Paulo';
-    const dataCorrigida = zonedTimeToUtc(`${data} 12:00:00`, timeZone);
+   const timeZone = 'America/Sao_Paulo';
+const dataCorrigida = zonedTimeToUtc(`${data} 12:00:00`, timeZone);
 
-    const novaTransacao = new Transacao({
-      tipo,
-      valor: valorNumerico,
-      data: dataCorrigida,
-      categoria: tipo !== "transferencia" ? categoria : undefined,
-      bancoOrigem: tipo === "despesa" || tipo === "transferencia" ? bancoOrigem : undefined,
-      bancoDestino: tipo === "receita" || tipo === "transferencia" ? bancoDestino : undefined,
-      conta: contaUsuario._id,
-    });
 
-    await novaTransacao.save();
 
-    if (tipo === "receita") {
-      await ContaController.adicionarSaldo(contaUsuario._id, valorNumerico);
-    } else if (tipo === "despesa") {
-      await ContaController.subtrairSaldo(contaUsuario._id, valorNumerico);
-    } else if (tipo === "transferencia") {
-      await ContaController.transferirSaldo(contaUsuario._id, bancoDestino, valorNumerico);
-    }
+      const novaTransacao = new Transacao({
+        tipo,
+        valor: valorNumerico, 
+        data: new Date(data).toISOString(), 
+        categoria: tipo !== "transferencia" ? categoria : undefined,
+        bancoOrigem:
+          tipo === "despesa" || tipo === "transferencia"
+            ? bancoOrigem
+            : undefined,
+        bancoDestino:
+          tipo === "receita" || tipo === "transferencia"
+            ? bancoDestino
+            : undefined,
+        conta: contaUsuario._id,
+      });
 
-    const contaAtualizada = await Conta.findById(contaUsuario._id);
+      await novaTransacao.save();
+
+      const contaAtualizada = await Conta.findById(contaUsuario._id);
 
     res.status(201).json({
       message: "Transação criada com sucesso",
@@ -144,8 +141,6 @@ static async criarTransacoes(req, res) {
     res.status(500).json({ message: `Erro ao criar transação: ${erro.message}` });
   }
 }
-
-
 
 
 
