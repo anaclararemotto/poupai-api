@@ -1,104 +1,132 @@
-# API de Gerenciamento Financeiro Poup.ai
-Este repositório contém o código-fonte de uma API RESTful desenvolvida em Node.js com Express e Mongoose, para o gerenciamento de dados financeiros. A API permite gerenciar bancos, contas, transações e usuários, incluindo funcionalidades de cadastro, listagem, exclusão e controle de saldo.
+# 🧠 Poup.ai - API de Gerenciamento Financeiro
 
-## 🚀 Tecnologias Utilizadas
-- **Node.js:** Ambiente de execução JavaScript.
-- **Express.js:** Framework web para Node.js, utilizado para construir a API.
-- **Mongoose:** ODM (Object Data Modeling) para MongoDB, facilitando a interação com o banco de dados.
-- **MongoDB:** Banco de dados NoSQL para armazenar os dados.
-- **bcrypt:** Biblioteca para hash de senhas, garantindo a segurança dos usuários.
-- **dotenv:** Para carregar variáveis de ambiente.
-- **CORS:** Para lidar com requisições de diferentes origens.
+Este repositório contém o código-fonte da **API Poup.ai**, uma solução RESTful para gerenciamento de dados financeiros.  
+A API permite gerenciar **usuários, bancos, contas e transações**, com funcionalidades de **autenticação**, **controle de saldo** e **relatórios financeiros mensais**.
 
-## 📋 Funcionalidades
-A API oferece as seguintes funcionalidades principais:
+---
 
-### Usuários
-- **Cadastro de Usuário:** Registra novos usuários com nome, e-mail e senha (senha hashada).
-- **Login de Usuário:** Autentica usuários com e-mail e senha.
-- **Listar Usuários:** Retorna todos os usuários cadastrados.
-- **Listar Usuário por ID:** Retorna um usuário específico pelo seu ID.
+## 🚀 Tecnologias
 
-### Bancos
-- **Cadastrar Banco:** Adiciona um novo banco ao sistema.
-- **Listar Bancos:** Retorna todos os bancos cadastrados.
-- **Listar Banco por ID:** Retorna um banco específico pelo seu ID.
-- **Excluir Banco:** Remove um banco do sistema.
+A API é construída com as seguintes tecnologias:
 
-### Contas
-- **Cadastrar Conta:** Cria uma nova conta, associada a um usuário existente.
-- **Listar Contas:** Retorna todas as contas cadastradas.
-- **Listar Conta por ID:** Retorna uma conta específica pelo seu ID.
-- **Adicionar Saldo:** Adiciona um valor ao saldo de uma conta.
-- **Subtrair Saldo:** Subtrai um valor do saldo de uma conta (com verificação de saldo insuficiente).
-- **Transferir Saldo:** Realiza transferências entre duas contas (com verificação de saldo insuficiente).
+- **Backend:** Node.js, Express.js  
+- **Banco de Dados:** MongoDB (com Mongoose)  
+- **Autenticação:** JWT (JSON Web Tokens) para controle de acesso e Bcrypt para hash de senhas  
+- **Utilidades:**  
+  - `dotenv` para variáveis de ambiente  
+  - `cors` para controle de acesso  
+  - `multer` para upload de arquivos  
+  - `luxon` para gerenciamento de datas  
 
-### Transações
-- **Criar Transação:** Registra receitas, despesas ou transferências, atualizando o saldo das contas envolvidas. Inclui validações para tipo de transação e valor.
-- **Listar Transações:** Retorna todas as transações.
-- **Listar Transação por ID:** Retorna uma transação específica pelo seu ID.
-- **Excluir Transação:** Remove uma transação.
+---
 
-## ⚙️ Como Rodar a Aplicação
-Siga os passos abaixo para configurar e executar a API em seu ambiente local:
+## 📋 Funcionalidades Principais
 
-### Pré-requisitos
-Certifique-se de ter o seguinte instalado em sua máquina:
+A API oferece um conjunto completo de funcionalidades, organizadas por módulo:
 
-- Node.js: <a href="https://nodejs.org/en/download/">Download e Instalação</a>
-- npm (gerenciador de pacotes do Node.js): Geralmente vem com o Node.js.
-- MongoDB: <a href="https://www.mongodb.com/try/download/community"> Download e Instalação ou acesso a uma instância de MongoDB Atlas</a>
+### 🔐 Usuários e Autenticação
 
-### Configuração
+- `POST /auth/`: Registra um novo usuário  
+- `POST /auth/login`: Autentica um usuário e retorna um token JWT  
+- `GET /auth/me`: Retorna os dados do usuário autenticado  
+- `GET /auth/`: Lista todos os usuários (requer autenticação)  
+- `GET /auth/:id`: Busca um usuário específico por ID (requer autenticação)  
+
+### 🏦 Contas
+
+- `GET /conta/minha`: Retorna a conta do usuário autenticado  
+- `POST /conta`: Cria uma nova conta, associada a um usuário existente  
+- `GET /conta/:id`: Busca uma conta por ID (requer autenticação)  
+
+### 🏛️ Bancos
+
+- `GET /banco/publico`: Lista alguns bancos públicos sem a necessidade de autenticação  
+- `POST /banco`: Cadastra um novo banco (requer autenticação)  
+- `GET /banco`: Lista todos os bancos (requer autenticação)  
+- `GET /banco/:id`: Busca um banco por ID (requer autenticação)  
+- `DELETE /banco/:id`: Exclui um banco (requer autenticação)  
+
+### 🗂️ Categorias
+
+- `POST /categoria`: Cadastra uma nova categoria  
+- `GET /categoria`: Lista todas as categorias  
+- `GET /categoria/:id`: Busca uma categoria por ID  
+- `GET /categoria/tipo/:tipo`: Lista categorias por tipo (receita ou despesa)  
+- `DELETE /categoria/:id`: Exclui uma categoria  
+
+### 💸 Transações
+
+- `POST /transacao/transacoes`: Cria uma nova transação (receita, despesa, ou transferência)  
+- `GET /transacao/transacoes`: Lista todas as transações do usuário autenticado  
+- `GET /transacao/transacoes/:id`: Busca uma transação por ID  
+- `PUT /transacao/transacoes/:id`: Edita uma transação existente  
+- `DELETE /transacao/transacoes/:id`: Exclui uma transação e ajusta o saldo  
+- `POST /upload`: Faz o upload de um arquivo e o associa a uma transação  
+
+### 📊 Relatórios
+
+- `GET /transacao/total-receitas`: Retorna o total de receitas do mês atual para o usuário autenticado  
+- `GET /transacao/total-despesas`: Retorna o total de despesas do mês atual para o usuário autenticado  
+- `GET /transacao/receitas-mes`: Retorna um resumo de receitas por categoria no mês atual  
+- `GET /transacao/despesas-mes`: Retorna um resumo de despesas por categoria no mês atual  
+
+---
+
+## ⚙️ Como Rodar a Aplicação Localmente
+
+### ✅ Pré-requisitos
+
+- **Node.js e npm:**  
+  Verifique se você já possui o Node.js instalado com os seguintes comandos no terminal ou prompt de comando:
+
+  ```bash
+  node -v
+  npm -v
+  ```
+
+  Se ambos os comandos retornarem versões (ex: `v18.17.1`), então o Node.js e o npm já estão instalados.
+
+  Caso contrário, faça o download e instalação a partir do site oficial:  
+  👉 https://nodejs.org/
+
+- **MongoDB:**  
+  Tenha acesso a uma instância local ou use um serviço como o [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
+
+### 📦 Configuração
+
 1. Clone o repositório:
+
 ```bash
 git clone https://github.com/anaclararemotto/poupai-api.git
 cd poupai-api
 ```
 
 2. Instale as dependências:
+
 ```bash
 npm install
 ```
 
-3. Crie o arquivo de variáveis de ambiente:
-Na raiz do projeto, crie um arquivo chamado .env e adicione a seguinte variável:
-```bash
-DB_CONNECTION_STRING = string_de_conexao_disponibilizada
+3. Crie um arquivo `.env` na raiz do projeto e adicione as variáveis de ambiente:
+
+```env
+DB_URI=mongodb://seu_usuario:senha@host:porta/database
+PORT=4000
 ```
 
-## Executando a API
-Para iniciar o servidor da API, execute o seguinte comando:
+### ▶️ Executando a API
+
+Para iniciar o servidor em modo de desenvolvimento:
+
 ```bash
 npm run dev
 ```
-A API estará rodando na porta 4000. Você verá uma mensagem no console como: Servidor escutando! e Conexão com o banco feita com sucesso!.
 
-## 🌐 Endpoints da API
-A API está configurada para ser acessada na porta 4000 (ex: http://localhost:4000).
+A API estará disponível em: [http://localhost:4000](http://localhost:4000)
 
-### Bancos
-- `GET /bancos` - Lista todos os bancos.
-- `GET /bancos/:id` - Busca um banco pelo ID.
-- `POST /bancos` - Cadastra um novo banco.
-- `DELETE /bancos/:id` - Exclui um banco.
+---
 
-### Contas
-- `GET /contas ` - Lista todas as contas.
-- `GET /contas/:id` - Busca uma conta pelo ID.
-- `POST /contas ` - Cadastra uma nova conta.
+## 🤝 Contribuições
 
-### Transações
-- `GET /transacoes` - Lista todas as transações.
-- `GET /transacoes/:id` - Busca uma transação pelo ID.
-- `POST /transacoes` - Cria uma nova transação (receita, despesa, transferência).
-- `DELETE /transacoes/:id` - Exclui uma transação.
-
-### Usuários
-- `GET /usuarios` - Lista todos os usuários.
-- `GET /usuarios/:id` - Busca um usuário pelo ID.
-- `POST /usuarios` - Cadastra um novo usuário.
-- `POST /login` - Realiza o login do usuário.
-
-## 🤝 Contribuição
-Contribuições são bem-vindas! Se você tiver sugestões, melhorias ou encontrar algum bug, sinta-se à vontade para abrir uma issue ou enviar um pull request.
+Contribuições são bem-vindas!  
+Sinta-se à vontade para abrir **issues** com sugestões ou problemas, ou enviar **pull requests** com melhorias.
