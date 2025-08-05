@@ -1,6 +1,6 @@
 import express from "express";
-import BancoController from "../controllers/bancoController.js";
 import { autenticarJWT } from "../auth/auth.js";
+import BancoController from "../controllers/bancoController.js";
 
 const router = express.Router();
 
