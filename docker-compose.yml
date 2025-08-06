@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - PORT=${PORT}
+      - DB_URI=${DB_URI}
+    restart: unless-stopped
