@@ -53,12 +53,10 @@ class BancoController {
   static async listarAlgunsBancosPublicos(req, res) {
     try {
       const bancosPublicos = await Banco.find({ isPublic: true }).limit(5);
-      res
-        .status(200)
-        .json({
-          message: "Dados de bancos públicos (sem autenticação)",
-          data: bancosPublicos,
-        });
+      res.status(200).json({
+        message: "Dados de bancos públicos (sem autenticação)",
+        data: bancosPublicos,
+      });
     } catch (erro) {
       res
         .status(500)

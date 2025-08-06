@@ -1,20 +1,24 @@
 import Conta from "../model/Conta.js";
-import {Usuario} from "../model/Usuario.js";
+import { Usuario } from "../model/Usuario.js";
 
 class ContaController {
-   static async minhaConta(req, res) {
+  static async minhaConta(req, res) {
     try {
-      const usuarioId = req.user.id; 
+      const usuarioId = req.user.id;
 
       const conta = await Conta.findOne({ "usuario._id": usuarioId });
 
       if (!conta) {
-        return res.status(404).json({ message: "Conta não encontrada para este usuário." });
+        return res
+          .status(404)
+          .json({ message: "Conta não encontrada para este usuário." });
       }
 
       res.status(200).json(conta);
     } catch (error) {
-      res.status(500).json({ message: `Erro ao buscar conta: ${error.message}` });
+      res
+        .status(500)
+        .json({ message: `Erro ao buscar conta: ${error.message}` });
     }
   }
   static async listarContas(req, res) {
@@ -30,18 +34,20 @@ class ContaController {
 
   static async listarContaPorId(req, res) {
     try {
-        const id = req.params.id;
-        const contaEncontrada = await Conta.findById(id);
-        res.status(200).json(contaEncontrada);
+      const id = req.params.id;
+      const contaEncontrada = await Conta.findById(id);
+      res.status(200).json(contaEncontrada);
     } catch (erro) {
-        res.status(500).send({ message: `${erro.message} - falha ao listar conta por ID` });
+      res
+        .status(500)
+        .send({ message: `${erro.message} - falha ao listar conta por ID` });
     }
   }
 
   static async cadastrarConta(req, res) {
     const novaConta = req.body;
-    
-   try {
+
+    try {
       const usuarioEncontrado = await Usuario.findById(novaConta.usuario);
 
       if (!usuarioEncontrado) {
@@ -50,19 +56,18 @@ class ContaController {
 
       const contaCompleta = {
         ...novaConta,
-        usuario: usuarioEncontrado.toObject(), 
+        usuario: usuarioEncontrado.toObject(),
       };
 
       const contaCriada = await Conta.create(contaCompleta);
 
       res.status(201).json({
         message: "Conta criada com sucesso",
-        conta: contaCriada
+        conta: contaCriada,
       });
-
     } catch (erro) {
       res.status(500).json({
-        message: `${erro.message} - falha ao cadastrar conta`
+        message: `${erro.message} - falha ao cadastrar conta`,
       });
     }
   }
@@ -70,7 +75,7 @@ class ContaController {
   static async adicionarSaldo(contaId, valor) {
     const conta = await Conta.findById(contaId);
     if (!conta) throw new Error("Conta não encontrada");
-    
+
     conta.saldo += valor;
     await conta.save();
     return conta;
@@ -93,7 +98,8 @@ class ContaController {
     const contaDestino = await Conta.findById(destinoId);
     if (!contaDestino) throw new Error("Conta de destino não encontrada");
 
-    if (contaOrigem.saldo < valor) throw new Error("Saldo insuficiente para transferência");
+    if (contaOrigem.saldo < valor)
+      throw new Error("Saldo insuficiente para transferência");
 
     contaOrigem.saldo -= valor;
     contaDestino.saldo += valor;
@@ -104,20 +110,24 @@ class ContaController {
   }
 
   static async obterContaDoUsuario(req, res) {
-  try {
-    const usuarioId = req.user.id;
+    try {
+      const usuarioId = req.user.id;
 
-    const conta = await Conta.findOne({ usuario: usuarioId });
+      const conta = await Conta.findOne({ usuario: usuarioId });
 
-    if (!conta) {
-      return res.status(404).json({ message: "Conta não encontrada para o usuário." });
+      if (!conta) {
+        return res
+          .status(404)
+          .json({ message: "Conta não encontrada para o usuário." });
+      }
+
+      return res.status(200).json(conta);
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ message: "Erro ao buscar conta do usuário." });
     }
-
-    return res.status(200).json(conta);
-  } catch (error) {
-    return res.status(500).json({ message: "Erro ao buscar conta do usuário." });
   }
-}
 }
 
 export default ContaController;

@@ -3,6 +3,7 @@ import banco from "./bancoRoutes.js";
 import categoria from "./categoriaRoutes.js";
 import conta from "./contaRoutes.js";
 import transacao from "./transacaoRoutes.js";
+import upload from "./uploadRoutes.js";
 import usuarioRouter from "./usuarioRoutes.js";
 
 import { autenticarJWT } from "../auth/auth.js";
@@ -20,6 +21,7 @@ const routes = (app) => {
   app.use("/conta", autenticarJWT, conta);
   app.use("/transacao", autenticarJWT, transacao);
   app.use("/categoria", autenticarJWT, categoria);
+  app.use("/upload", autenticarJWT, upload);
 };
 
 export default routes;

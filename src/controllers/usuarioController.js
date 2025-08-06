@@ -1,8 +1,8 @@
-import { Usuario } from "../model/Usuario.js";
-import Conta from "../model/Conta.js";
-import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { segredo } from "../auth/auth.js";
+import Conta from "../model/Conta.js";
+import { Usuario } from "../model/Usuario.js";
 
 class UsuarioController {
   static async listarUsuarios(req, res) {
